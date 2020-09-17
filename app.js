@@ -10,6 +10,7 @@ var usersRouter = require('./routes/users');
 var dishRouter = require('./routes/dishRouter');
 var promoRouter = require('./routes/promoRouter');
 var leaderRouter = require('./routes/leaderRouter');
+const uploadRouter = require('./routes/uploadRouter');
 
 var app = express();
 
@@ -21,14 +22,26 @@ const mongoose = require('mongoose');
 const Dishes = require('./models/dishes');
 var config = require('./config');
 
+
 const url = config.mongoUrl;
 const connect = mongoose.connect(url);
 
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Secure traffic only
+app.all('*', (req, res, next) => {
+  if (req.secure) {
+    return next();
+  }
+  else {
+    res.redirect(307, 'https://' + req.hostname + ':' + app.get('secPort') + req.url);
+  }
+});
+
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/imageUpload',uploadRouter);
 
 
 connect.then((db) => {
