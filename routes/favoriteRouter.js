@@ -73,20 +73,29 @@ favoriteRouter.route('/:favoriteId')
     .options(cors.corsWithOptions, (req, res) => {
         res.sendStatus(200);
     })
-    .get(cors.cors, authenticate.verifyUser, (req, res, next) => {
-
-        Favorites.findById(req.params.favoriteId)
-            .then((favorite) => {
-                if (!(favorite.user.equals(req.user._id))) {
-                    var err = new Error('Only creator can perform this');
-                    err.status = 401;
-                    return next(err);
-                }
+    .get(cors.cors, authenticate.verifyUser, (req,res,next) => {
+        Favorites.findOne({user: req.user._id})
+        .then((favorites) => {
+            if (!favorites) {
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
-                res.json(favorite);
-            }, (err) => next(err))
-            .catch((err) => next(err));
+                return res.json({"exists": false, "favorites": favorites});
+            }
+            else {
+                if (favorites.dishes.indexOf(req.params.dishId) < 0) {
+                    res.statusCode = 200;
+                    res.setHeader('Content-Type', 'application/json');
+                    return res.json({"exists": false, "favorites": favorites});
+                }
+                else {
+                    res.statusCode = 200;
+                    res.setHeader('Content-Type', 'application/json');
+                    return res.json({"exists": true, "favorites": favorites});
+                }
+            }
+    
+        }, (err) => next(err))
+        .catch((err) => next(err))
     })
     .post(cors.cors, authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         Favorites.findById(req.body._id)
